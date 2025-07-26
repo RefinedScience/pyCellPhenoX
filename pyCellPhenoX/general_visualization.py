@@ -239,14 +239,14 @@ def plot_violin_cell_type_categories(adata_filtered, cell_type_use, sig_thresh =
     """
     Plot the CNA correlation coefficients, while considering the significance threshold of coef_fdr.
 
-    This function generates a boxplot (with overlaid jittered points) of interpretable scores 
+    This function generates a boxplot (with overlaid jittered points) of coefficients 
     grouped by cell type. It allows for plotting either at the individual cell level or by 
     summarizing (median) scores at the sample level. The plot is saved to disk and also shown.
 
     Parameters
     ----------
     adata_filtered : AnnData
-        The AnnData object containing `.obs` with interpretable scores and metadata.
+        The AnnData object containing `.obs` with coef and coef_fdr scores and metadata.
     
     cell_type_use : str
         The column name in `adata_filtered.obs` that defines the cell type categories.
@@ -259,21 +259,16 @@ def plot_violin_cell_type_categories(adata_filtered, cell_type_use, sig_thresh =
 
     level : str, optional (default="cell")
         Level at which to compute the plot. Must be one of:
-        - "cell": interpretable scores per individual cell
-        - "sample": median interpretable scores per sample per cell type
+        - "cell": coef per individual cell
+        - "sample": median coef per sample per cell type
 
     plot_dir : str, optional (default="./")
         Path to the directory where the plot will be saved.
 
-    model_type : str, optional (default="LR")
-        The model identifier used to extract interpretable scores from `.obs`. 
-        E.g., "LR" for logistic regression or "RF" for random forest.
-        The column used will be `interpretable_score_{model_type}`.
-
     Returns
     -------
     None
-        Saves and displays a boxplot of interpretable scores by cell type.
+        Saves and displays a violin plot of coefficient scores by cell type.
     """
     if level == "sample":
         # Sample-level aggregation
@@ -325,7 +320,7 @@ def plot_violin_cell_type_categories(adata_filtered, cell_type_use, sig_thresh =
     sns.violinplot(
         data=summary_df,
         x="cell_type",
-        y="interpretable_score",
+        y="coef",
         palette="Set3",
         inner="box",  # show median line
         cut=0,
@@ -429,6 +424,7 @@ def plot_boxplot_cell_type_categories_int(adata_filtered, cell_type_use, fig_wid
             .to_dict()
             )
 
+
     elif level == "cell":
         # Cell-level data
         summary_df = pd.DataFrame({
@@ -483,19 +479,17 @@ def plot_boxplot_cell_type_categories_int(adata_filtered, cell_type_use, fig_wid
     plt.title(f"Interpretable Scores by Cell Type ({level.capitalize()} Level: {model_type})")
     plt.tight_layout()
     if level == "sample":
-        plt.savefig("".join([plot_dir, "/Interpretable_Score_by_Celltype_", cell_type_use, "_", model_type, "_sample.png"]), 
+        plt.savefig("".join([plot_dir, "/Int_Score_by_Celltype_", cell_type_use, "_", model_type, "_sample.png"]), 
         bbox_inches="tight", pad_inches=0.3, transparent=False)
     elif level == "cell":
-        plt.savefig("".join([plot_dir, "/Interpretable_Score_by_Celltype_", cell_type_use, "_", model_type, "_cell.png"]), 
+        plt.savefig("".join([plot_dir, "/Int_Score_by_Celltype_", cell_type_use, "_", model_type, "_cell.png"]), 
         bbox_inches="tight", pad_inches=0.3, transparent=False)
     plt.show()
 
 
-import matplotlib.pyplot as plt
-import seaborn as sns
-import pandas as pd
 
-def plot_violin_cell_type_categories_int(adata_filtered, cell_type_use, fig_width=10, level="cell", plot_dir="./", model_type="LR"):
+
+def plot_violin_cell_type_categories_int(filt_df, cell_type_use, fig_width=10, level="cell", plot_dir="./", model_type="LR"):
     """
     Plot interpretable scores by cell type at the cell or sample level using violin plots.
 
@@ -506,8 +500,8 @@ def plot_violin_cell_type_categories_int(adata_filtered, cell_type_use, fig_widt
 
     Parameters
     ----------
-    adata_filtered : AnnData
-        The AnnData object containing `.obs` with interpretable scores and metadata.
+    adata_filtered : AnnData.obs (or just dataframe with the appropriate columns)
+        dataframe with interpretable scores and metadata.
     
     cell_type_use : str
         The column name in `adata_filtered.obs` that defines the cell type categories.
@@ -534,7 +528,7 @@ def plot_violin_cell_type_categories_int(adata_filtered, cell_type_use, fig_widt
         Saves and displays a violin plot of interpretable scores by cell type.
     """
     if level == "sample":
-        obs_df = adata_filtered.obs[[f"interpretable_score_{model_type}", cell_type_use, "sample_id"]].dropna()
+        obs_df = filt_df[[f"interpretable_score_{model_type}", cell_type_use, "sample_id"]].dropna()
         summary_df = (
             obs_df
             .groupby(["sample_id", cell_type_use])
@@ -542,6 +536,7 @@ def plot_violin_cell_type_categories_int(adata_filtered, cell_type_use, fig_widt
             .reset_index()
             .rename(columns={cell_type_use: "cell_type"})
         )
+        summary_df = summary_df.dropna()
         group_counts = (
             summary_df.groupby("cell_type")["sample_id"]
             .nunique()
@@ -549,21 +544,17 @@ def plot_violin_cell_type_categories_int(adata_filtered, cell_type_use, fig_widt
             )
     elif level == "cell":
         summary_df = pd.DataFrame({
-            "interpretable_score": adata_filtered.obs[f"interpretable_score_{model_type}"],
-            "cell_type": adata_filtered.obs[cell_type_use]
+            "interpretable_score": filt_df[f"interpretable_score_{model_type}"],
+            "cell_type": filt_df[cell_type_use]
         }).dropna()
-        #group_counts = summary_df["cell_type"].value_counts().to_dict()
-        group_counts = (
-            summary_df.groupby("cell_type")
-            .nunique()
-            .to_dict()
-            )
+        group_counts = summary_df["cell_type"].value_counts().to_dict()
     else:
         raise ValueError("`level` must be either 'cell' or 'sample'")
     # Plotting
     plt.figure(figsize=(fig_width, 6))
     ax = plt.gca()
-
+    print("GROUP COUNTS")
+    print(group_counts)
     sns.violinplot(
         data=summary_df,
         x="cell_type",
@@ -596,8 +587,41 @@ def plot_violin_cell_type_categories_int(adata_filtered, cell_type_use, fig_widt
     ylabel = "Median Interpretable Score per Sample" if level == "sample" else "Interpretable Score"
     plt.ylabel(ylabel)
     plt.title(f"Interpretable Scores by Cell Type ({level.capitalize()} Level: {model_type})")
-    #plt.tight_layout()
+    plt.tight_layout()
 
-    filename = f"{plot_dir}/Interpretable_Score_by_Celltype_{cell_type_use}_{model_type}_{level}.png"
+    filename = f"{plot_dir}Int_Score_by_Celltype_{cell_type_use}_{model_type}_{level}.png"
+    plt.savefig(filename, bbox_inches="tight", pad_inches=0.3, transparent=False, dpi=200)
+    plt.show()
+
+def plot_shap_summary_heatmap(result_df, plot_dir, model_type, title="SHAP Summary by Expression Level"):
+    """
+    Plots a heatmap of SHAP summary statistics for each gene program.
+
+    Parameters
+    ----------
+    result_df : pandas.DataFrame
+        DataFrame indexed by gene program, with columns such as:
+        ['Low_Shap_LR', 'Med_Shap_LR', 'High_Shap_LR', 
+         'Low_Shap_RF', 'Med_Shap_RF', 'High_Shap_RF']
+
+    title : str
+        Title for the heatmap.
+    """
+    plt.figure(figsize=(10, max(6, len(result_df) * 0.5)))  # Dynamically scale height
+    sns.heatmap(
+        result_df,
+        cmap="RdBu_r",
+        center=0,
+        annot=True,
+        fmt=".2f",
+        linewidths=0.5,
+        linecolor='white',
+        cbar_kws={'label': 'Mean SHAP Value'}
+    )
+    plt.title(title, fontsize=14)
+    plt.xlabel("SHAP Summary Metric")
+    plt.ylabel("Gene Program")
+    plt.tight_layout()
+    filename = f"{plot_dir}Shap_by_Exp_Score_{model_type}.png"
     plt.savefig(filename, bbox_inches="tight", pad_inches=0.3, transparent=False, dpi=200)
     plt.show()

@@ -3,6 +3,8 @@ import pandas as pd
 import numpy as np
 import shap
 from xgboost import *
+import fasttreeshap
+import time
 
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
@@ -115,13 +117,14 @@ class CellPhenoX:
             y_val_inner,
         ]
 
-    def model_training_shap_val(self, outpath, num_cores, model_type):
+    def model_training_shap_val(self, outpath, num_cores, model_type, shap_type="Fast"):
         """Train the model using nested cross validation strategy and generate shap values for each fold/CV repeat
 
         Parameters:
         outpath (str): the path for the output folder
         num_cores (int): number of cores to use for inner training
         model_type (str): LogReg or RandomForest to choose the model to use
+        shap_type (str): Options are OG, Approx, and Fast
         
 
         Returns:
@@ -277,21 +280,53 @@ class CellPhenoX:
                     " - Val AUPRC: ",
                     val_prc,
                 )
-
-                explainer = shap.Explainer(result.best_estimator_, X_train_outer)
-                shap_values = explainer(X_test_outer).values
-
-                print("Shap values shape", shap_values.shape)
+            
+                if model_type == "RandomForest":
+                    if shap_type == "OG":
+                        start = time.time()
+                        explainer = shap.TreeExplainer(result.best_estimator_)
+                        shap_values = explainer.shap_values(X_test_outer)
+                        tottime = time.time()-start
+                        self.total_time = self.total_time + tottime
+                    elif shap_type == "Approx":
+                        start = time.time()
+                        explainer = shap.TreeExplainer(result.best_estimator_)
+                        shap_values = explainer.shap_values(X_test_outer, approximate=True)
+                        tottime = time.time()-start
+                        self.total_time = self.total_time + tottime
+                    elif shap_type == "Fast":
+                        start = time.time()
+                        explainer = fasttreeshap.TreeExplainer(result.best_estimator_, algorithm="auto", n_jobs=num_cores) # n_jobs=-1 for parallel processing
+                        shap_values = explainer(X_test_outer).values
+                        tottime = time.time()-start
+                    
+                elif model_type == "LogReg":
+                    n_sample_use = max(int(X_train_outer.shape[0] * 0.3), 1000)
+                    explainer = shap.LinearExplainer(result.best_estimator_, X_train_outer, #feature_perturbation='correlation_dependent', 
+                    nsamples=n_sample_use)
+                    shap_values = explainer.shap_values(X_test_outer)
+                print("Time for getting Shaps (min):", tottime/60)
+                print("Shap values shape", shap_values.shape, "0 shape", shap_values[0].shape)
 
                 # Extract SHAP information per fold per sample
-                # Shap > 0.39 has Shape (n_samples, n_features) for binary classification and  (n_samples, n_features, n_classes) for multiclass classification
+                # Shap > 0.39 
+                # General Explainer --> Shape (n_samples, n_features) for binary classification and  (n_samples, n_features, n_classes) for multiclass classification
+                # Using shap.TreeExplainer, etc. --> Maybe Shape (n_classes) where each is (n_samples, n_feautres)
                 if float(shap.__version__.split(".")[1]) > 39:
                     if num_classes == 2:
-                        # Get the values for the positive class: 
-                        #shap_values_pos_class = np.array([sv[:, 1] for sv in shap_values])
-                        for k, test_index in enumerate(test_outer_ix):
-                            test_index = self.X.index[test_index]
-                            getattr(self, f"shap_values_per_cv_{model_use_quick}")[test_index][CV_repeat] = shap_values[k]
+                        # if there are 3 entires for length then the last is the class
+                        if shap_values.ndim == 3:
+                            # Get the values for the positive class: 
+                            shap_values_pos_class = shap_values[:, :, 1]
+                            for k, test_index in enumerate(test_outer_ix):
+                                test_index = self.X.index[test_index]
+                                # Save the SHAP vector for that sample
+                                getattr(self, f"shap_values_per_cv_{model_use_quick}")[test_index][CV_repeat] = shap_values_pos_class[k]
+                        elif shap_values.ndim == 2:
+                            for k, test_index in enumerate(test_outer_ix):
+                                test_index = self.X.index[test_index]
+                                getattr(self, f"shap_values_per_cv_{model_use_quick}")[test_index][CV_repeat] = shap_values[k]
+
                     else:
                         # UNTESTED
                         for k, test_index in enumerate(test_outer_ix):
