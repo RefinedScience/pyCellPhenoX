@@ -10,6 +10,24 @@
 ![Black](https://img.shields.io/badge/code%20style-black-000000.svg)
 ![Visitors](https://api.visitorbadge.io/api/visitors?path=https%3A%2F%2Fgithub.com%2Ffanzhanglab%2FpyCellPhenoX&label=%23Visits&labelColor=%23000000&countColor=%2337d67a&style=plastic)
 
+## Why the forked version?
+pyCellPhenoX is currently unpublished and might still be under development. Here were the problems I came across when trying to use the unforked version as of July 14, 2025:
+1. The current code breaks with newest version of CNA, which makes the Neighborhood Abundance Matrix 
+2. The current demo shows that the NAM is a cell by cell matrix even though the NAM produced from the code is actually a cell by neighborhood. Additionally, CNA automatically calculates PCs for the NAM that we can use.
+3. CNA requires numpy <2.0 while pyCellPhenoX shows a requirement of numpy >2.0. Installing via pip automatically will uninstall numpy to replace it with the ">2.0" version, thereby breaking the NAM function.
+4. Actual Code changes:
+   1. CellPhenoX.py was adapted to work with Shap above and below version 0.39 (different output formats), AND to work with either Logistic Regression (LogReg) or Random Forest (Random_Forest)
+
+## Installation Instructions
+**github** ([link](https://github.com/RefinedScience/pyCellPhenoX)):
+``` bash
+# install pyCellPhenoX directly from the forked version on github
+git clone git@github.com:RefinedScience/pyCellPhenoX.git
+```
+
+## Dependencies/ Requirements
+You can create a conda environment that works for both CNA and pyCellPhenoX by running `conda create env -f environment.yml`. 
+
 ## Getting Started...
 
 Here, we introduce CellPhenoX, an eXplainable machine learning method to identify cell-specific phenotypes that influence clinical outcomes for single-cell data. CellPhenoX integrates robust classification models, explainable AI techniques, and a statistical covariate framework to generate interpretable, cell-specific scores that uncover cell populations associated with a clinical phenotype of interest.
@@ -19,40 +37,9 @@ Here, we introduce CellPhenoX, an eXplainable machine learning method to identif
 > Figure 1. CellPhenoX leverages cell neighborhood co-abundance embeddings, Xi , across samples and clinical variable Y as inputs. By applying an adapted SHAP framework for classification models, CellPhenoX generates Interpretable Scores that quantify the contribution of each feature Xi, along with covariates  and interaction term Xi, to the prediction of a clinically relevant phenotype Y. The results are visualized at single-cell level, showcasing Interpretable Scores at low-dimensional space, correlated cell type annotations, and associated marker genes.
 
 
-You can install _pyCellPhenoX_ from PyPI:
-
-``` bash
-pip install pyCellPhenoX
-```
-
-<!-- **conda** ([link](https://anaconda.org/conda-forge/pyCellPhenoX)):
-``` bash 
-# install pyCellPhenoX from conda-forge
-conda install -c conda-forge pyCellPhenoX
-``` -->
-**github** ([link](https://github.com/fanzhanglab/pyCellPhenoX)):
-``` bash
-# install pyCellPhenoX directly from github
-git clone git@github.com:fanzhanglab/pyCellPhenoX.git
-```
-
-## Dependencies/ Requirements
-When using pyCellPhenoX please ensure you are using the following dependency versions or requirements
-``` python 
-python = "^3.9"
-pandas = "^2.2.3"
-numpy = "^2.1.1"
-xgboost = "^2.0"
-numba = ">=0.54"
-shap = "^0.46.0"
-scikit-learn = "^1.5.2"
-matplotlib = "^3.9.2"
-statsmodels = "^0.14.3"
-```
-
-
 ## Tutorials
-Please see the [Command-line Reference] for details. Additonally, please see [Vignettes] on the documentation page. 
+For the newest version: Please refer to X for an exmaple of using pyCellPhenoX on the AML dataset.
+For the original: Please see the [Command-line Reference] for details. Additonally, please see [Vignettes] on the documentation page. 
 
 ## API
 pyCellPhenoX has four major functions which are apart of the object:
