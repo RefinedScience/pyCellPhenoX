@@ -34,7 +34,8 @@ def fast_sparse_correlation(Y, X_sparse, chunks=True):
 
         # Center the sparse chunk without densifying
         X_mean = X_chunk.mean(axis=0).A1  # mean across cells
-        X_chunk.data -= np.take(X_mean, X_chunk.indices)
+        #X_chunk.data -= np.take(X_mean, X_chunk.indices)
+        X_chunk.data -= X_mean[X_chunk.indices - start]
 
         # Dot product between centered Y and X
         numer = Y_centered.T @ X_chunk  # shape: (n_vars, chunk_size)
@@ -61,9 +62,6 @@ def fast_sparse_correlation(Y, X_sparse, chunks=True):
 
       # Compute numerator: dot product between centered Y and X
       numer = Y_centered.T @ X_centered  # shape: (n_vars, n_genes)
-
-      # Compute std deviations
-      Y_std = Y_centered.std(axis=0, ddof=0)[:, np.newaxis]  # shape: (n_vars, 1)
     
       # Compute std of X efficiently
       X_centered_squared = X_centered.copy()
