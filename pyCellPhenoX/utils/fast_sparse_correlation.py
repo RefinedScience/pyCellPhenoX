@@ -35,7 +35,8 @@ def fast_sparse_correlation(Y, X_sparse, chunks=True):
         # Center the sparse chunk without densifying
         X_mean = X_chunk.mean(axis=0).A1  # mean across cells
         #X_chunk.data -= np.take(X_mean, X_chunk.indices)
-        X_chunk.data -= X_mean[X_chunk.indices - start]
+        #X_chunk.data -= X_mean[X_chunk.indices - start]
+        X_chunk = X_chunk - csr_matrix(np.broadcast_to(X_mean, X_chunk.shape))
 
         # Dot product between centered Y and X
         numer = Y_centered.T @ X_chunk  # shape: (n_vars, chunk_size)
