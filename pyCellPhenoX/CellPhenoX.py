@@ -46,6 +46,7 @@ class CellPhenoX:
         self.y = y
         # self.fc = fc
         # self.num_samp = num_samp
+        self.total_time = 0
         self.CV_repeats = CV_repeats
         self.outer_num_splits = outer_num_splits
         self.inner_num_splits = inner_num_splits
