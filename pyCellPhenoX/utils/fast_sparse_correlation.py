@@ -45,7 +45,7 @@ def fast_sparse_correlation(Y, X_sparse, chunks=True):
         X_std = np.sqrt(X_chunk_sq.mean(axis=0)).A1  # shape: (chunk_size,)
 
         # Avoid divide-by-zero
-        denom = (n_cells * (Y_std @ X_std[np.newaxis, :]))
+        denom = (n_cells * (Y_std * X_std[np.newaxis, :]))
         denom[denom == 0] = np.nan  # optional: mark as NaN where std is 0
 
         # Correlation for this chunk
