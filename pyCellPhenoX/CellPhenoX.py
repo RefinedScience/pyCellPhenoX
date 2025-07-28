@@ -300,6 +300,7 @@ class CellPhenoX:
                         explainer = fasttreeshap.TreeExplainer(result.best_estimator_, algorithm="auto", n_jobs=num_cores) # n_jobs=-1 for parallel processing
                         shap_values = explainer(X_test_outer).values
                         tottime = time.time()-start
+                        self.total_time = self.total_time + tottime
                     
                 elif model_type == "LogReg":
                     n_sample_use = max(int(X_train_outer.shape[0] * 0.3), 1000)
