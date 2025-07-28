@@ -489,7 +489,7 @@ class CellPhenoX:
     def get_best_score(self):
         return getattr(self, f"best_score_{model_use_quick}")
 
-    def get_best_model(self):
+    def get_best_model(self, model_use_quick):
         return getattr(self, f"best_model_{model_use_quick}")
 
     def get_shap_values(self, outpath, model_use_quick):
