@@ -27,7 +27,6 @@ git clone git@github.com:RefinedScience/pyCellPhenoX.git
 
 ## Dependencies/ Requirements
 You can create a conda environment that works for both CNA and pyCellPhenoX by running `conda create env -f environment.yml`. 
-The requirements.txt refers to the OLD version requirements.txt but will not work for numpy and cna together.
 
 ## Getting Started...
 

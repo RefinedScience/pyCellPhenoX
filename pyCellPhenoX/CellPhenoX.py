@@ -302,9 +302,11 @@ class CellPhenoX:
                     
                 elif model_type == "LogReg":
                     n_sample_use = max(int(X_train_outer.shape[0] * 0.3), 1000)
+                    start = time.time()
                     explainer = shap.LinearExplainer(result.best_estimator_, X_train_outer, #feature_perturbation='correlation_dependent', 
                     nsamples=n_sample_use)
                     shap_values = explainer.shap_values(X_test_outer)
+                    tottime = time.time()-start
                 print("Time for getting Shaps (min):", tottime/60)
                 print("Shap values shape", shap_values.shape, "0 shape", shap_values[0].shape)
 
